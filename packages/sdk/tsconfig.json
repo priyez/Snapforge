@@ -1,0 +1,10 @@
+{
+  "extends": "@screenshot-api/tsconfig/base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "incremental": false,
+    "lib": ["ES2022", "DOM"]
+  },
+  "include": ["src"]
+}

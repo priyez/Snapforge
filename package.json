@@ -1,0 +1,28 @@
+{
+  "name": "screenshot-api",
+  "private": true,
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "db:push": "pnpm --filter @screenshot-api/db db:push",
+    "db:migrate": "pnpm --filter @screenshot-api/db db:migrate",
+    "db:studio": "pnpm --filter @screenshot-api/db db:studio",
+    "db:seed": "pnpm --filter @screenshot-api/db db:seed"
+  },
+  "devDependencies": {
+    "@screenshot-api/tsconfig": "workspace:*",
+    "@types/node": "^25.6.2",
+    "axios": "^1.16.0",
+    "turbo": "^2.5.0",
+    "typescript": "^5.7.0"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2"
+  }
+}

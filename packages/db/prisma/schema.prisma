@@ -1,0 +1,159 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── User Model ──────────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  avatarUrl String?
+  plan      Plan     @default(FREE)
+  password  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  apiKeys   ApiKey[]
+  jobs      ScreenshotJob[]
+  schedules Schedule[]
+  webhooks  Webhook[]
+  accounts  Account[]
+
+  // Notification Settings
+  emailAlerts      Boolean @default(false)
+  alertThreshold   Float   @default(5.0)
+  slackWebhook     String?
+  discordWebhook   String?
+  telegramChatId   String?
+
+  @@map("users")
+}
+
+// ── OAuth Account Model ─────────────────────────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider          String  // "google" | "github"
+  providerAccountId String  // The user's ID from the provider
+  avatarUrl         String?
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Webhook {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  url       String
+  name      String?
+  secret    String   // For signing payloads
+  events    String[] // e.g. ["screenshot.completed", "diff.detected"]
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  logs      WebhookLog[]
+
+  @@index([userId])
+  @@map("webhooks")
+}
+
+model WebhookLog {
+  id           String   @id @default(cuid())
+  webhookId    String
+  webhook      Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  event        String
+  payload      Json
+  statusCode   Int?
+  responseBody String?
+  success      Boolean
+  durationMs   Int
+  createdAt    DateTime @default(now())
+
+  @@index([webhookId])
+  @@map("webhook_logs")
+}
+
+model Schedule {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  url         String
+  options     Json     // Screenshot options snapshot
+  cron        String   // Cron expression e.g. "0 0 * * *"
+  active      Boolean  @default(true)
+  lastRunAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@map("schedules")
+}
+
+// ── API Key Model ───────────────────────────────────────────────
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  name       String    @default("Default")
+  prefix     String    // Visible prefix e.g. "sk_live_abc1"
+  hashedKey  String    @unique // SHA-256 hash of the full key
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+  revoked    Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+
+  @@index([hashedKey])
+  @@index([userId])
+  @@map("api_keys")
+}
+
+// ── Screenshot Job Model ────────────────────────────────────────
+
+model ScreenshotJob {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id])
+  url          String
+  options      Json      // Full screenshot options snapshot
+  status       JobStatus @default(QUEUED)
+  imageUrl     String?
+  renderTimeMs Int?
+  errorMessage String?
+  cacheHit     Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  completedAt  DateTime?
+  scheduleId   String?
+  diffPercentage Float?
+  diffImageUrl   String?
+  baselineId     String? // Job ID used as baseline for comparison
+
+  @@index([userId, createdAt])
+  @@index([status])
+  @@map("screenshot_jobs")
+}
+
+// ── Enums ───────────────────────────────────────────────────────
+
+enum Plan {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+enum JobStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+}

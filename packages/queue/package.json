@@ -1,0 +1,25 @@
+{
+  "name": "@screenshot-api/queue",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "bullmq": "^5.30.0",
+    "ioredis": "^5.4.0",
+    "@screenshot-api/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@screenshot-api/tsconfig": "workspace:*",
+    "typescript": "^5.7.0"
+  }
+}

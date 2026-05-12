@@ -1,0 +1,30 @@
+{
+  "name": "@screenshot-api/sdk",
+  "version": "0.1.0",
+  "description": "Official SDK for the Screenshot API service",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@screenshot-api/tsconfig": "workspace:*",
+    "@types/node": "^22.0.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0"
+  },
+  "keywords": ["screenshot", "api", "sdk", "screenshot-api", "web-capture"],
+  "license": "MIT"
+}
