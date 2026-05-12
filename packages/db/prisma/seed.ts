@@ -20,9 +20,9 @@ async function main() {
   console.log(`✅ User created: ${user.email} (${user.id})`);
 
   // Create a test API key
-  const rawKey = `sk_live_${randomBytes(32).toString("hex")}`;
+  const rawKey = `sfg_live_${randomBytes(32).toString("hex")}`;
   const hashedKey = createHash("sha256").update(rawKey).digest("hex");
-  const prefix = `sk_live_${rawKey.slice(8, 16)}`;
+  const prefix = `sfg_live_${rawKey.slice(9, 17)}`;
 
   const apiKey = await prisma.apiKey.upsert({
     where: { hashedKey },
@@ -51,7 +51,7 @@ async function main() {
     },
   });
 
-  const proRawKey = `sk_live_${randomBytes(32).toString("hex")}`;
+  const proRawKey = `sfg_live_${randomBytes(32).toString("hex")}`;
   const proHashedKey = createHash("sha256").update(proRawKey).digest("hex");
 
   await prisma.apiKey.upsert({
@@ -59,7 +59,7 @@ async function main() {
     update: {},
     create: {
       name: "Pro Key",
-      prefix: `sk_live_${proRawKey.slice(8, 16)}`,
+      prefix: `sfg_live_${proRawKey.slice(9, 17)}`,
       hashedKey: proHashedKey,
       userId: proUser.id,
     },

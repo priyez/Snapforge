@@ -71,7 +71,7 @@ In your SDK config:
 import { createClient } from "@snapforge/sdk";
 
 const snap = createClient({
-  apiKey: "sf_live_...",
+  apiKey: "sfg_live_...",
   options: {
     width: 1920,
     height: 1080,
@@ -107,7 +107,7 @@ You can generate and manage your API keys in the [Dashboard](/dashboard/keys).
 Include your API key in the \`Authorization\` header of every request:
 
 \`\`\`bash
-Authorization: Bearer sf_live_...
+Authorization: Bearer sfg_live_...
 \`\`\`
 `
 };

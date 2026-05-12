@@ -64,17 +64,17 @@ curl http://localhost:3000/api/health
 
 # Take a screenshot (sync)
 curl "http://localhost:3000/api/screenshot?url=https://example.com" \
-  -H "Authorization: Bearer sk_live_xxx"
+  -H "Authorization: Bearer sfg_live_xxx"
 
 # Take a screenshot (async)
 curl -X POST http://localhost:3000/api/screenshot \
-  -H "Authorization: Bearer sk_live_xxx" \
+  -H "Authorization: Bearer sfg_live_xxx" \
   -H "Content-Type: application/json" \
   -d '{"url": "https://example.com", "async": true}'
 
 # Check job status
 curl http://localhost:3000/api/screenshot/{jobId} \
-  -H "Authorization: Bearer sk_live_xxx"
+  -H "Authorization: Bearer sfg_live_xxx"
 ```
 
 ### SDK Usage
