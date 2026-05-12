@@ -11,6 +11,8 @@ describe("Authentication API", () => {
     REDIS_URL: "redis://localhost",
     STORAGE_PROVIDER: "local" as const,
     STORAGE_PATH: "./test-storage",
+    DASHBOARD_URL: "http://localhost:3300",
+    API_URL: "http://localhost:3000",
   };
 
   it("POST /api/auth/login — should login successfully with valid credentials", async () => {
