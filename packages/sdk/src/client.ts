@@ -24,7 +24,7 @@ const DEFAULT_RETRIES = 2;
  *
  * @example
  * ```typescript
- * const client = new ScreenshotAPI({ apiKey: 'sk_live_xxx' });
+ * const client = new ScreenshotAPI({ apiKey: 'sfg_live_xxx' });
  *
  * // Synchronous screenshot
  * const result = await client.screenshot({ url: 'https://example.com' });

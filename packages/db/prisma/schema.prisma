@@ -104,7 +104,7 @@ model Schedule {
 model ApiKey {
   id         String    @id @default(cuid())
   name       String    @default("Default")
-  prefix     String    // Visible prefix e.g. "sk_live_abc1"
+  prefix     String    // Visible prefix e.g. "sfg_live_abc1"
   hashedKey  String    @unique // SHA-256 hash of the full key
   userId     String
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)

@@ -51,7 +51,7 @@ describe("Screenshot API", () => {
     const response = await app.inject({
       method: "POST",
       url: "/api/screenshot",
-      headers: { Authorization: "Bearer sk_live_test" },
+      headers: { Authorization: "Bearer sfg_live_test" },
       payload: { url: "not-a-url" },
     });
 
@@ -67,7 +67,7 @@ describe("Screenshot API", () => {
     const response = await app.inject({
       method: "POST",
       url: "/api/screenshot",
-      headers: { Authorization: "Bearer sk_live_test" },
+      headers: { Authorization: "Bearer sfg_live_test" },
       payload: { url: "http://169.254.169.254/latest/meta-data/" },
     });
 
@@ -83,7 +83,7 @@ describe("Screenshot API", () => {
     const response = await app.inject({
       method: "POST",
       url: "/api/screenshot",
-      headers: { Authorization: "Bearer sk_live_test" },
+      headers: { Authorization: "Bearer sfg_live_test" },
       payload: {
         url: "https://example.com",
         format: "webp",

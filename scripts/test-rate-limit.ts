@@ -9,7 +9,7 @@ import axios from "axios";
  */
 
 const API_URL = "http://localhost:3000/api/screenshot";
-const API_KEY = "sk_live_test_key"; // Replace with a valid key from your DB
+const API_KEY = "sfg_live_test_key"; // Replace with a valid key from your DB
 
 async function testRateLimit() {
   console.log("🚀 Starting Rate Limit Test...");

@@ -2,7 +2,7 @@ import { ScreenshotAPI } from "../packages/sdk/src/index.js";
 
 // ── Configuration ───────────────────────────────────────────────
 
-const API_KEY = process.env.API_KEY || "sk_live_test_key";
+const API_KEY = process.env.API_KEY || "sfg_live_test_key";
 const API_URL = "http://localhost:3000";
 
 const sdk = new ScreenshotAPI({

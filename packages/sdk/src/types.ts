@@ -1,7 +1,7 @@
 // ── SDK Types ───────────────────────────────────────────────────
 
 export interface ScreenshotAPIConfig {
-  /** Your API key (starts with sk_live_) */
+  /** Your API key (starts with sfg_live_) */
   apiKey: string;
   /** Base URL of the API server */
   baseUrl?: string;

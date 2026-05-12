@@ -22,9 +22,9 @@ declare module "fastify" {
  */
 export function generateApiKey(): { rawKey: string; hashedKey: string; prefix: string } {
   const raw = randomBytes(32).toString("hex");
-  const rawKey = `sk_live_${raw}`;
+  const rawKey = `sfg_live_${raw}`;
   const hashedKey = createHash("sha256").update(rawKey).digest("hex");
-  const prefix = `sk_live_${raw.slice(0, 8)}`;
+  const prefix = `sfg_live_${raw.slice(0, 8)}`;
 
   return { rawKey, hashedKey, prefix };
 }
