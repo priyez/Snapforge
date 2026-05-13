@@ -1,15 +1,16 @@
 import type { FastifyInstance } from "fastify";
+import type { Redis as RedisClient } from "ioredis";
 import Redis from "ioredis";
 import type { Env } from "../config/env.js";
 
 declare module "fastify" {
   interface FastifyInstance {
-    redis: InstanceType<typeof Redis>;
+    redis: RedisClient;
   }
 }
 
 export async function registerRedisPlugin(app: FastifyInstance, env: Env) {
-  const redis = new (Redis as unknown as new (url: string, opts: object) => InstanceType<typeof Redis>)(env.REDIS_URL, {
+  const redis = new Redis(env.REDIS_URL, {
     maxRetriesPerRequest: null, // Required for BullMQ
     enableReadyCheck: false,
     retryStrategy(times: number) {
