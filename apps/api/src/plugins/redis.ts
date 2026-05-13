@@ -1,11 +1,10 @@
 import type { FastifyInstance } from "fastify";
-import type { Redis as RedisClient } from "ioredis";
-import Redis from "ioredis";
+import { Redis } from "ioredis";
 import type { Env } from "../config/env.js";
 
 declare module "fastify" {
   interface FastifyInstance {
-    redis: RedisClient;
+    redis: Redis;
   }
 }
 
