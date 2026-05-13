@@ -152,28 +152,28 @@ export function createProcessor(env: WorkerEnv, storage: StorageAdapter): Worker
 
         console.log(`✅ Job ${job.id} completed — ${imageUrl}`);
 
-        // Fire Webhooks
+        // Fire Webhooks & Alerts asynchronously (don't block job completion)
         const webhookPayload = {
           jobId: job.id!,
           status: "completed",
           ...response,
         };
         
-        await fireWebhooks(data.userId || "anonymous", "screenshot.completed", webhookPayload);
+        fireWebhooks(data.userId || "anonymous", "screenshot.completed", webhookPayload)
+          .catch(err => console.error("❌ Async webhooks failed:", err));
         
         if ((diffPercentage || 0) > 1) {
-          await fireWebhooks(data.userId || "anonymous", "diff.detected", {
+          fireWebhooks(data.userId || "anonymous", "diff.detected", {
             ...webhookPayload,
             diffPercentage,
             diffImageUrl,
-          });
+          }).catch(err => console.error("❌ Async diff webhooks failed:", err));
 
-          // Send Global Alerts (Email, Slack, Discord, etc)
-          await sendAlerts(data.userId || "anonymous", {
+          sendAlerts(data.userId || "anonymous", {
             url: data.url,
             imageUrl,
             diffImageUrl,
-          }, diffPercentage || 0);
+          }, diffPercentage || 0).catch(err => console.error("❌ Async alerts failed:", err));
         }
 
         return response;

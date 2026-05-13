@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { Queue } from "bullmq";
+import { Queue, QueueEvents } from "bullmq";
 import {
   DEFAULTS,
   LIMITS,
@@ -68,9 +68,16 @@ export async function registerScreenshotRoutes(app: FastifyInstance, env: Env) {
     connection: { url: env.REDIS_URL },
   });
 
+  const queueEvents = new QueueEvents(QUEUE_NAMES.SCREENSHOT, {
+    connection: { url: env.REDIS_URL },
+  });
+
   // Cleanup on close
   app.addHook("onClose", async () => {
-    await queue.close();
+    await Promise.all([
+      queue.close(),
+      queueEvents.close()
+    ]);
   });
 
   // ── GET /api/screenshot — Synchronous screenshot ────────────
@@ -149,14 +156,7 @@ export async function registerScreenshotRoutes(app: FastifyInstance, env: Env) {
 
     // Wait for completion (sync mode)
     try {
-      const result = await job.waitUntilFinished(
-        (await import("bullmq")).QueueEvents
-          ? new (await import("bullmq")).QueueEvents(QUEUE_NAMES.SCREENSHOT, {
-              connection: { url: env.REDIS_URL },
-            })
-          : undefined as any,
-        LIMITS.MAX_TIMEOUT
-      );
+      const result = await job.waitUntilFinished(queueEvents, LIMITS.MAX_TIMEOUT);
 
       return reply.send({
         success: true,
@@ -259,13 +259,7 @@ export async function registerScreenshotRoutes(app: FastifyInstance, env: Env) {
 
     // Sync mode — wait for result
     try {
-      const { QueueEvents: QE } = await import("bullmq");
-      const queueEvents = new QE(QUEUE_NAMES.SCREENSHOT, {
-        connection: { url: env.REDIS_URL },
-      });
-
       const result = await job.waitUntilFinished(queueEvents, LIMITS.MAX_TIMEOUT);
-      await queueEvents.close();
 
       return reply.send({
         success: true,
