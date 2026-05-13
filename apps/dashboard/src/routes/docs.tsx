@@ -109,6 +109,109 @@ Include your API key in the \`Authorization\` header of every request:
 \`\`\`bash
 Authorization: Bearer sfg_live_...
 \`\`\`
+`,
+  schedules: `
+# Schedules
+
+Schedules allow you to automate screenshot capture at specific intervals using Cron expressions.
+
+Each schedule tracks its own history and can be configured with custom viewport sizes, formats, and advanced options.
+
+## Features
+- **Cron-based automation**: Run every minute, hour, or day.
+- **Repeatable jobs**: Managed via BullMQ for high reliability.
+- **History tracking**: View the last 30 runs for any schedule.
+- **Auto-cleanup**: Completed jobs are cleaned up automatically after 1 hour.
+`,
+  webhooks: `
+# Webhooks
+
+Webhooks notify your application when a screenshot is completed or when a visual change is detected.
+
+## Supported Events
+- \`screenshot.completed\`: Sent when a job finishes successfully.
+- \`screenshot.failed\`: Sent if a job fails after all retries.
+- \`diff.detected\`: (Beta) Sent when a visual difference exceeds your threshold.
+
+## Security
+Every webhook payload is signed with a secret. You should verify the signature to ensure the request came from SnapForge.
+`,
+  screenshots: `
+# Screenshots
+
+Screenshots are the core entity of SnapForge. They can be triggered synchronously (wait for result) or asynchronously (poll for result).
+
+## Lifecycle
+1. **Queued**: The job is added to the processing queue.
+2. **Processing**: A headless browser instance is navigating and capturing.
+3. **Completed**: The image has been uploaded to storage and metadata is saved.
+4. **Failed**: The capture failed (e.g. timeout, DNS error).
+
+## Storage
+By default, screenshots are stored in **Cloudflare R2** and served via a high-performance CDN.
+`,
+  capture: `
+# Capture API
+
+The main endpoint to trigger a screenshot capture.
+
+**Endpoint**: \`POST /api/screenshot\`
+
+## Parameters
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| \`url\` | string | - | The target URL to capture |
+| \`width\` | number | 1280 | Viewport width |
+| \`height\` | number | 720 | Viewport height |
+| \`format\` | string | png | png, jpeg, or webp |
+| \`async\` | boolean | false | If true, returns a jobId immediately |
+
+## Example Request
+\`\`\`bash
+curl -X POST http://localhost:3000/api/screenshot \\
+  -H "Authorization: Bearer sfg_live_..." \\
+  -H "Content-Type: application/json" \\
+  -d '{"url": "https://google.com", "async": true}'
+\`\`\`
+`,
+  list: `
+# History API
+
+Retrieve a list of recent screenshot jobs for your account.
+
+**Endpoint**: \`GET /api/screenshot/history\`
+
+Returns the last 50 jobs with their status, image URLs, and performance metrics.
+`,
+  update: `
+# Management
+
+You can update schedules and webhook configurations via the API or the Dashboard.
+
+## Update Schedule
+**Endpoint**: \`PATCH /api/screenshot/schedules/:id\`
+
+Update the URL, Cron pattern, or options for an existing schedule. The background job will be automatically rescheduled.
+`,
+  delete: `
+# Cleanup
+
+Delete API keys, schedules, or history records when they are no longer needed.
+
+## Delete Schedule
+**Endpoint**: \`DELETE /api/screenshot/schedules/:id\`
+
+Removes the schedule from the database and cancels any pending background jobs.
+`,
+  stats: `
+# Usage & Stats
+
+Monitor your account usage and quota limits.
+
+## Daily Quota
+Free plans are limited to 100 screenshots per day. PRO plans have higher limits and priority processing.
+
+Check your current usage in the [Overview Dashboard](/dashboard).
 `
 };
 
@@ -137,8 +240,8 @@ function DocsPage() {
     {
       label: 'CORE CONCEPTS',
       items: [
-        { id: 'projects', label: 'Projects', icon: DatabaseIcon },
-        { id: 'targets', label: 'Targets', icon: Layers01Icon },
+        { id: 'schedules', label: 'Schedules', icon: DatabaseIcon },
+        { id: 'webhooks', label: 'Webhooks', icon: ActivityIcon },
         { id: 'screenshots', label: 'Screenshots', icon: File01Icon },
       ]
     },
