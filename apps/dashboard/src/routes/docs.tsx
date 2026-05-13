@@ -10,7 +10,6 @@ import {
   Download01Icon,
   Key01Icon,
   DatabaseIcon,
-  Layers01Icon,
   File01Icon,
   Delete01Icon,
   ActivityIcon,
@@ -27,6 +26,7 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { Input } from '../components/ui';
 
 export const Route = createFileRoute('/docs')({
   component: DocsPage,
@@ -361,14 +361,14 @@ function DocsPage() {
         `}>
           <div className="h-full flex flex-col p-6 pt-8">
             {/* Search */}
-            <div className="relative mb-8">
-              <HugeiconsIcon icon={SearchIcon} size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-              <input
+            <div className="mb-8">
+              <Input
                 type="text"
                 placeholder="Search docs..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-full py-1.5 pl-9 pr-4 text-xs focus:outline-none focus:border-white/20 focus:bg-white/[0.07] transition-all"
+                icon={SearchIcon}
+                className="!h-9 !rounded-full !text-xs !bg-white/5 !border-white/10 focus:!border-white/20"
               />
             </div>
 
