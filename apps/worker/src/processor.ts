@@ -24,6 +24,9 @@ export function createProcessor(env: WorkerEnv, storage: StorageAdapter): Worker
     enableReadyCheck: false,
   });
 
+  redis.on("connect", () => console.log("✅ Worker Redis connected successfully"));
+  redis.on("error", (err) => console.error("❌ Worker Redis connection error:", err));
+
   const worker = new Worker<ScreenshotJobData, ScreenshotResponse>(
     QUEUE_NAMES.SCREENSHOT,
     async (job: Job<ScreenshotJobData>) => {
@@ -198,7 +201,7 @@ export function createProcessor(env: WorkerEnv, storage: StorageAdapter): Worker
       }
     },
     {
-      connection: { url: env.REDIS_URL },
+      connection: redis,
       concurrency: env.WORKER_CONCURRENCY,
       limiter: {
         max: env.WORKER_CONCURRENCY * 2,
