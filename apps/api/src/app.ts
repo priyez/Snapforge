@@ -28,8 +28,9 @@ export async function buildApp(env: Env) {
 
   // ── Core Plugins ────────────────────────────────────────────
   await app.register(cors, {
-    origin: ["http://localhost:3300", "http://localhost:3000"],
+    origin: ["http://localhost:3300", "http://localhost:3000", env.DASHBOARD_URL],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    credentials: true,
   });
   await app.register(jwt, {
     secret: process.env.JWT_SECRET || "super-secret-dev-key-change-me",
