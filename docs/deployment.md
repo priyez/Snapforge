@@ -103,7 +103,18 @@ pnpm install && pnpm build
 
 #### Dashboard
 
-Deploy as a static site. After `pnpm build`, serve the contents of `apps/dashboard/dist/`.
+The dashboard is a static React application. It is best deployed to **Vercel** or **Netlify**.
+
+##### Deploying to Vercel
+1.  **Create a New Project** in Vercel and import your repository.
+2.  **Configure Project Settings**:
+    *   **Framework Preset**: `Vite`
+    *   **Root Directory**: `apps/dashboard`
+    *   **Build Command**: `pnpm build`
+    *   **Output Directory**: `dist`
+3.  **Environment Variables**:
+    *   `VITE_API_BASE_URL`: Set this to your production API URL (e.g., `https://snapforge-api.up.railway.app`).
+4.  **Click Deploy**.
 
 #### Infrastructure
 
