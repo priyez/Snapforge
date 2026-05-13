@@ -1,5 +1,5 @@
 declare module "ioredis-mock" {
-  import Redis from "ioredis";
+  import type { Redis } from "ioredis";
   const RedisMock: typeof Redis;
   export default RedisMock;
 }
