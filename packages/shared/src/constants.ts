@@ -13,8 +13,8 @@ export const DEFAULTS = {
 // ── Limits ──────────────────────────────────────────────────────
 
 export const LIMITS = {
-  /** Maximum timeout for page navigation (ms) */
-  MAX_TIMEOUT: 60000,
+  /** Maximum timeout for page navigation (ms). Set below gateway timeout (60s). */
+  MAX_TIMEOUT: 45000,
   /** Maximum delay before screenshot (ms) */
   MAX_DELAY: 10000,
   /** Maximum viewport width */
