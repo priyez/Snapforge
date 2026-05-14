@@ -26,10 +26,16 @@ export async function takeDirectScreenshot(options: ScreenshotOptions): Promise<
     throw new Error(`URL validation failed: ${urlValidation.reason}`);
   }
 
+  // Determine browser path (Windows local dev vs production)
+  const executablePath = 
+    process.env.NODE_ENV === "development" && process.platform === "win32"
+      ? "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+      : process.env.PUPPETEER_EXECUTABLE_PATH;
+
   // Launch a temporary browser
   const browser = await puppeteer.launch({
     headless: true,
-    executablePath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    executablePath,
     args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
   });
 
