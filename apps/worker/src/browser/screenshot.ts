@@ -1,7 +1,12 @@
 import type { Page, ScreenshotOptions as PuppeteerScreenshotOptions } from "puppeteer";
 import { acquireBrowser, releaseBrowser } from "./pool.js";
-import { getDevicePreset } from "./devices.js";
-import { validateUrl, type ScreenshotOptions, LIMITS, DEFAULTS } from "@screenshot-api/shared";
+import { 
+  validateUrl, 
+  getDevicePreset, 
+  type ScreenshotOptions, 
+  LIMITS, 
+  DEFAULTS 
+} from "@screenshot-api/shared";
 
 export interface ScreenshotResult {
   buffer: Buffer;

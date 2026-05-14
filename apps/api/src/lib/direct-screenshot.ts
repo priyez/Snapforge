@@ -3,9 +3,9 @@ import {
   type ScreenshotOptions, 
   DEFAULTS, 
   LIMITS,
-  validateUrl
+  validateUrl,
+  getDevicePreset,
 } from "@screenshot-api/shared";
-import { getDevicePreset } from "../../../worker/src/browser/devices.js";
 
 export interface DirectScreenshotResult {
   buffer: Buffer;

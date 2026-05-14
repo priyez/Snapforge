@@ -1,6 +1,4 @@
-import { R2StorageAdapter } from "../../../worker/src/storage/r2.js";
-import { LocalStorageAdapter } from "../../../worker/src/storage/local.js";
-import type { StorageAdapter } from "../../../worker/src/storage/interface.js";
+import { R2StorageAdapter, LocalStorageAdapter, type StorageAdapter } from "@screenshot-api/shared";
 import { loadEnv } from "../config/env.js";
 
 let storage: StorageAdapter | null = null;

@@ -13,6 +13,8 @@ describe("Authentication API", () => {
     STORAGE_PATH: "./test-storage",
     DASHBOARD_URL: "http://localhost:3300",
     API_URL: "http://localhost:3000",
+    DIRECT_SCREENSHOT: false,
+    SCREENSHOT_QUEUE_NAME: "screenshots",
   };
 
   it("POST /api/auth/login — should login successfully with valid credentials", async () => {

@@ -12,13 +12,18 @@ import {
   type ApiResponse,
   type ScreenshotResponse,
   type AsyncScreenshotResponse,
+  validateUrl,
+  getDevicePreset,
+  R2StorageAdapter,
+  LocalStorageAdapter,
+  type StorageAdapter,
+  generateStorageKey
 } from "@screenshot-api/shared";
 import type { Env } from "../config/env.js";
 import { checkDailyQuota, incrementDailyQuota } from "../plugins/quota.js";
 import { prisma } from "@screenshot-api/db";
 import { takeDirectScreenshot } from "../lib/direct-screenshot.js";
 import { getStorageAdapter } from "../lib/storage.js";
-import { generateStorageKey } from "../../../worker/src/storage/interface.js";
 
 // ── Request Validation Schemas ──────────────────────────────────
 

@@ -1,11 +1,8 @@
 import http from "node:http";
 import { loadWorkerEnv } from "./config/env.js";
-import { QUEUE_NAMES } from "@screenshot-api/shared";
+import { QUEUE_NAMES, LocalStorageAdapter, R2StorageAdapter, type StorageAdapter } from "@screenshot-api/shared";
 import { initBrowserPool, destroyBrowserPool, getPoolStats } from "./browser/pool.js";
 import { createProcessor } from "./processor.js";
-import { LocalStorageAdapter } from "./storage/local.js";
-import { R2StorageAdapter } from "./storage/r2.js";
-import type { StorageAdapter } from "./storage/interface.js";
 
 async function main() {
   const env = loadWorkerEnv();

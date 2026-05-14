@@ -6,9 +6,10 @@ import {
   LIMITS,
   type ScreenshotJobData,
   type ScreenshotResponse,
+  generateStorageKey,
+  type StorageAdapter,
 } from "@screenshot-api/shared";
 import { takeScreenshot } from "./browser/screenshot.js";
-import { generateStorageKey, type StorageAdapter } from "./storage/interface.js";
 import type { WorkerEnv } from "./config/env.js";
 import { prisma } from "@screenshot-api/db";
 import axios from "axios";
