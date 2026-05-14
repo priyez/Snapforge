@@ -11,7 +11,6 @@ puppeteer.use(StealthPlugin());
 
 /**
  * Auto-detect a Chrome/Chromium/Edge executable on the system.
- * Used when Puppeteer's bundled browser download is skipped.
  */
 function findSystemChrome(): string | undefined {
   const candidates = [
@@ -41,12 +40,12 @@ function findSystemChrome(): string | undefined {
 
 // ── Browser Pool ────────────────────────────────────────────────
 
-let pool: Pool<Browser> | null = null;
-let totalPagesCreated = 0;
+// We use a WeakMap to track metadata like page count for each browser instance
+const browserMetadata = new WeakMap<Browser, { pageCount: number; isClosing: boolean }>();
 
-/**
- * Chrome launch arguments optimized for headless screenshots.
- */
+let pool: Pool<Browser> | null = null;
+let totalPagesProcessed = 0;
+
 const CHROME_ARGS = [
   "--no-sandbox",
   "--disable-setuid-sandbox",
@@ -86,13 +85,9 @@ const DEFAULT_POOL_CONFIG: PoolConfig = {
   maxBrowsers: 3,
   minBrowsers: 1,
   maxPagesPerBrowser: 50,
-  idleTimeoutMs: 60000,
+  idleTimeoutMs: 600000, // 10 minutes (increased from 1m to reduce churn)
 };
 
-/**
- * Initialize the browser pool.
- * Must be called once at worker startup.
- */
 export function initBrowserPool(config: Partial<PoolConfig> = {}): Pool<Browser> {
   const cfg = { ...DEFAULT_POOL_CONFIG, ...config };
 
@@ -103,37 +98,42 @@ export function initBrowserPool(config: Partial<PoolConfig> = {}): Pool<Browser>
       if (executablePath) {
         console.log(`   Using browser: ${executablePath}`);
       }
+      
       const browser = await puppeteer.launch({
         headless: true,
         args: CHROME_ARGS,
         ...(executablePath ? { executablePath } : {}),
         protocolTimeout: 60000,
-      });
+      }) as unknown as Browser;
+
+      browserMetadata.set(browser, { pageCount: 0, isClosing: false });
 
       browser.on("disconnected", () => {
-        console.log("⚠️ Browser disconnected unexpectedly");
+        const meta = browserMetadata.get(browser);
+        if (meta && !meta.isClosing) {
+          console.log("⚠️ Browser disconnected unexpectedly");
+        }
       });
 
-      return browser as unknown as Browser;
+      return browser;
     },
 
     destroy: async (browser: Browser): Promise<void> => {
+      const meta = browserMetadata.get(browser);
+      if (meta) meta.isClosing = true;
+
       console.log("🔴 Closing browser instance...");
       try {
         await browser.close();
       } catch (err) {
         console.error("Failed to close browser:", err);
-        // Force kill the process if close fails
         const proc = browser.process();
-        if (proc) {
-          proc.kill("SIGKILL");
-        }
+        if (proc) proc.kill("SIGKILL");
       }
     },
 
     validate: async (browser: Browser): Promise<boolean> => {
       try {
-        // Check if browser is still responsive
         await browser.version();
         return true;
       } catch {
@@ -146,17 +146,13 @@ export function initBrowserPool(config: Partial<PoolConfig> = {}): Pool<Browser>
     max: cfg.maxBrowsers,
     min: cfg.minBrowsers,
     idleTimeoutMillis: cfg.idleTimeoutMs,
-    testOnBorrow: true, // Validate browser before lending
-    acquireTimeoutMillis: 30000, // Max wait to acquire a browser
-    evictionRunIntervalMillis: 30000, // Check for idle browsers every 30s
+    testOnBorrow: true,
+    acquireTimeoutMillis: 30000,
+    evictionRunIntervalMillis: 60000, // Check for idle browsers every 1m
   });
 
   pool.on("factoryCreateError", (err) => {
     console.error("❌ Browser pool create error:", err);
-  });
-
-  pool.on("factoryDestroyError", (err) => {
-    console.error("❌ Browser pool destroy error:", err);
   });
 
   console.log(
@@ -166,10 +162,6 @@ export function initBrowserPool(config: Partial<PoolConfig> = {}): Pool<Browser>
   return pool;
 }
 
-/**
- * Acquire a browser from the pool.
- * Always release it back when done.
- */
 export async function acquireBrowser(): Promise<Browser> {
   if (!pool) {
     throw new Error("Browser pool not initialized. Call initBrowserPool() first.");
@@ -177,31 +169,28 @@ export async function acquireBrowser(): Promise<Browser> {
   return pool.acquire();
 }
 
-/**
- * Release a browser back to the pool.
- * If the browser has served too many pages, destroy it instead.
- */
 export async function releaseBrowser(
   browser: Browser,
   maxPages: number = DEFAULT_POOL_CONFIG.maxPagesPerBrowser
 ): Promise<void> {
   if (!pool) return;
 
-  totalPagesCreated++;
+  const meta = browserMetadata.get(browser);
+  if (meta) {
+    meta.pageCount++;
+    totalPagesProcessed++;
 
-  // Recycle browser after maxPages to prevent memory leaks
-  if (totalPagesCreated % maxPages === 0) {
-    console.log(`♻️ Recycling browser after ${maxPages} pages`);
-    await pool.destroy(browser);
-  } else {
-    await pool.release(browser);
+    // Recycle browser after maxPages to prevent memory leaks
+    if (meta.pageCount >= maxPages) {
+      console.log(`♻️ Recycling browser after ${meta.pageCount} pages`);
+      await pool.destroy(browser);
+      return;
+    }
   }
+
+  await pool.release(browser);
 }
 
-/**
- * Drain and shut down the entire pool.
- * Call this on graceful shutdown.
- */
 export async function destroyBrowserPool(): Promise<void> {
   if (!pool) return;
 
@@ -212,9 +201,6 @@ export async function destroyBrowserPool(): Promise<void> {
   console.log("✅ Browser pool destroyed");
 }
 
-/**
- * Get pool stats for monitoring.
- */
 export function getPoolStats() {
   if (!pool) return null;
   return {
@@ -222,6 +208,6 @@ export function getPoolStats() {
     available: pool.available,
     borrowed: pool.borrowed,
     pending: pool.pending,
-    totalPagesCreated,
+    totalPagesProcessed,
   };
 }

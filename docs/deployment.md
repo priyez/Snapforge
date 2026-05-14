@@ -75,31 +75,27 @@ SCREENSHOT_TIMEOUT=30000
 
 ## Deployment Options
 
-### Option 1 — Railway / Render (Recommended for getting started)
+### Option 1 — Railway (Recommended for Monorepos)
 
-Both platforms support monorepo deployments.
+Railway is an excellent choice for this monorepo. It supports multiple services from a single repository.
 
-#### API Server
+#### 🏗️ Monorepo Strategy
+1.  **Create Two Services**: In Railway, create two services pointing to the same repository.
+2.  **Rename Them**: Name one `SnapForge API` and the other `SnapForge Worker`.
 
-```bash
-# Start command
-node apps/api/dist/index.js
+#### 🚀 API Service Settings
+*   **Root Directory**: `/`
+*   **Build Command**: `pnpm install && pnpm turbo run build --filter=@screenshot-api/api...`
+*   **Start Command**: `pnpm --filter @screenshot-api/api start`
 
-# Build command
-pnpm install && pnpm build
-```
+#### 🤖 Worker Service Settings
+*   **Root Directory**: `/`
+*   **Builder**: Select **Nixpacks** (this is critical for Chromium support).
+*   **Build Command**: `pnpm install && pnpm turbo run build --filter=@screenshot-api/worker...`
+*   **Start Command**: `pnpm --filter @screenshot-api/worker start`
+*   **Environment Variable**: Add `NIXPACKS_NODE_PKG_MANAGER=pnpm` to force the correct builder.
 
-#### Worker
-
-```bash
-# Start command
-node apps/worker/dist/index.js
-
-# Build command
-pnpm install && pnpm build
-```
-
-> **Note:** The worker requires a Chromium installation. Most PaaS platforms include it in their Node.js buildpacks. If not, add `puppeteer` to your build dependencies — it auto-downloads Chromium.
+> **Note:** The worker requires the `nixpacks.toml` file in the root of your project to correctly install Chromium and its system dependencies (`libgbm1`, `xvfb`, etc.).
 
 #### Dashboard
 
