@@ -19,6 +19,12 @@ import { compareScreenshots } from "./lib/diff.js";
  * Create and start the screenshot processing worker.
  */
 export function createProcessor(env: WorkerEnv, storage: StorageAdapter): Worker {
+  const connectionOptions = {
+    url: env.REDIS_URL,
+    maxRetriesPerRequest: null,
+  };
+
+  // We still need a separate redis client for setex (caching)
   const redis = new Redis(env.REDIS_URL, {
     maxRetriesPerRequest: null,
     enableReadyCheck: false,
@@ -35,17 +41,22 @@ export function createProcessor(env: WorkerEnv, storage: StorageAdapter): Worker
       console.log(`📸 Processing job ${job.id} — ${data.url}`);
       await job.updateProgress(10);
 
-      // Create job record in DB
-      const dbJob = await (prisma as any).screenshotJob.create({
-        data: {
-          id: job.id,
-          userId: data.userId || "anonymous",
-          url: data.url,
-          options: data as any,
-          status: "PROCESSING",
-          scheduleId: data.scheduleId,
-        },
-      });
+      // Create job record in DB (Resiliently)
+      let dbJob: any = null;
+      try {
+        dbJob = await (prisma as any).screenshotJob.create({
+          data: {
+            id: job.id,
+            userId: data.userId || "anonymous",
+            url: data.url,
+            options: data as any,
+            status: "PROCESSING",
+            scheduleId: data.scheduleId,
+          },
+        });
+      } catch (dbErr) {
+        console.error("⚠️ Database unreachable, proceeding without DB logging:", (dbErr as Error).message);
+      }
 
       try {
         // Take screenshot
@@ -123,18 +134,20 @@ export function createProcessor(env: WorkerEnv, storage: StorageAdapter): Worker
         };
 
         // Update DB
-        await (prisma as any).screenshotJob.update({
-          where: { id: dbJob.id },
-          data: {
-            status: "COMPLETED",
-            imageUrl,
-            renderTimeMs: result.renderTimeMs,
-            completedAt: new Date(),
-            diffPercentage,
-            diffImageUrl,
-            baselineId,
-          },
-        });
+        if (dbJob) {
+          await (prisma as any).screenshotJob.update({
+            where: { id: dbJob.id },
+            data: {
+              status: "COMPLETED",
+              imageUrl,
+              renderTimeMs: result.renderTimeMs,
+              completedAt: new Date(),
+              diffPercentage,
+              diffImageUrl,
+              baselineId,
+            },
+          }).catch((err: any) => console.error("⚠️ Failed to update DB job status:", err.message));
+        }
 
         // Update schedule lastRunAt
         if (data.scheduleId) {
@@ -182,13 +195,15 @@ export function createProcessor(env: WorkerEnv, storage: StorageAdapter): Worker
         return response;
       } catch (err: any) {
         // Update DB on failure
-        await (prisma as any).screenshotJob.update({
-          where: { id: dbJob.id },
-          data: {
-            status: "FAILED",
-            errorMessage: err.message,
-          },
-        }).catch(() => {});
+        if (dbJob) {
+          await (prisma as any).screenshotJob.update({
+            where: { id: dbJob.id },
+            data: {
+              status: "FAILED",
+              errorMessage: err.message,
+            },
+          }).catch(() => {});
+        }
 
         // Fire failure webhooks
         await fireWebhooks(data.userId || "anonymous", "screenshot.failed", {
@@ -201,7 +216,7 @@ export function createProcessor(env: WorkerEnv, storage: StorageAdapter): Worker
       }
     },
     {
-      connection: redis,
+      connection: connectionOptions,
       concurrency: env.WORKER_CONCURRENCY,
       limiter: {
         max: env.WORKER_CONCURRENCY * 2,

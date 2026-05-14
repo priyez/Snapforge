@@ -63,13 +63,18 @@ const screenshotBodySchema = z.object({
 // ── Route Registration ──────────────────────────────────────────
 
 export async function registerScreenshotRoutes(app: FastifyInstance, env: Env) {
+  const connectionOptions = {
+    url: env.REDIS_URL,
+    maxRetriesPerRequest: null,
+  };
+
   // Create queue producer
   const queue = new Queue(QUEUE_NAMES.SCREENSHOT, {
-    connection: { url: env.REDIS_URL },
+    connection: connectionOptions,
   });
 
   const queueEvents = new QueueEvents(QUEUE_NAMES.SCREENSHOT, {
-    connection: { url: env.REDIS_URL },
+    connection: connectionOptions,
   });
 
   // Cleanup on close
