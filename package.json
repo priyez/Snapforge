@@ -10,7 +10,7 @@
     "db:migrate": "pnpm --filter @screenshot-api/db db:migrate",
     "db:studio": "pnpm --filter @screenshot-api/db db:studio",
     "db:seed": "pnpm --filter @screenshot-api/db db:seed",
-    "postinstall": "puppeteer browsers install chrome"
+    "postinstall": "npx puppeteer browsers install chrome"
   },
   "devDependencies": {
     "@screenshot-api/tsconfig": "workspace:*",
