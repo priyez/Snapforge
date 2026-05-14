@@ -58,7 +58,7 @@ async function main() {
   const statsInterval = setInterval(() => {
     const stats = getPoolStats();
     if (stats) {
-      console.log(`📊 Pool stats: size=${stats.size} available=${stats.available} borrowed=${stats.borrowed} pending=${stats.pending} totalPages=${stats.totalPagesCreated}`);
+      console.log(`📊 Pool stats: size=${stats.size} available=${stats.available} borrowed=${stats.borrowed} pending=${stats.pending} totalPages=${stats.totalPagesProcessed}`);
     }
   }, 60000);
 
