@@ -66,7 +66,10 @@ ADMIN_SECRET=your-admin-secret
 # ── Worker ──
 WORKER_CONCURRENCY=5
 MAX_BROWSER_PAGES=50
-SCREENSHOT_TIMEOUT=30000
+SCREENSHOT_TIMEOUT=90000
+
+# ── Direct Mode (STRICTLY DEVELOPMENT ONLY) ──
+DIRECT_SCREENSHOT=false
 ```
 
 > **Critical:** Never reuse development secrets in production. Generate strong random values for `JWT_SECRET` and `ADMIN_SECRET`.
@@ -94,8 +97,9 @@ Railway is an excellent choice for this monorepo. It supports multiple services 
 *   **Build Command**: `pnpm install && pnpm turbo run build --filter=@screenshot-api/worker...`
 *   **Start Command**: `pnpm --filter @screenshot-api/worker start`
 *   **Environment Variable**: Add `NIXPACKS_NODE_PKG_MANAGER=pnpm` to force the correct builder.
+*   **Health Check**: Railway requires the worker to listen on a port. The worker automatically starts an HTTP health check server on `$PORT` (defaulting to 3001). Set the **Health Check Path** to `/health` in Railway Settings.
 
-> **Note:** The worker requires the `nixpacks.toml` file in the root of your project to correctly install Chromium and its system dependencies (`libgbm1`, `xvfb`, etc.).
+> **Note:** The worker requires the `nixpacks.toml` file in the root of your project to correctly install Chromium and its system dependencies (`libgbm1`, `xvfb`, etc.). Ensure your Railway project has at least **2GB RAM** for the worker to avoid browser crashes.
 
 #### Dashboard
 
@@ -329,8 +333,14 @@ Configure your hosting provider to monitor:
 
 | Endpoint              | Purpose                         | Expected |
 |-----------------------|---------------------------------|----------|
-| `GET /api/health`     | Basic liveness                  | 200      |
-| `GET /api/health/ready` | Full readiness (Redis check)  | 200      |
+| `GET /api/health`     | API Liveness                    | 200      |
+| `GET /api/health/ready` | API Readiness (Redis/DB check) | 200      |
+| `GET /`               | Worker Health (on Worker port)  | 200      |
+
+**Railway Health Check Configuration (Worker):**
+- **Public Port**: Disabled
+- **Health Check Path**: `/health` (or just `/`)
+- **Port**: 3001 (locally) or `$PORT` (assigned by Railway)
 
 ---
 
@@ -354,7 +364,7 @@ Configure your hosting provider to monitor:
 | Component       | Minimum  | Recommended |
 |-----------------|----------|-------------|
 | API Server      | 256 MB   | 512 MB      |
-| Worker (per)    | 1 GB     | 2 GB        |
+| Worker (per)    | 1 GB     | 2 GB+       |
 | PostgreSQL      | 256 MB   | 1 GB        |
 | Redis           | 128 MB   | 512 MB      |
 

@@ -57,7 +57,9 @@ export const RATE_LIMITS = {
 // ── Queue Names ─────────────────────────────────────────────────
 
 export const QUEUE_NAMES = {
-  SCREENSHOT: "screenshots",
+  get SCREENSHOT() {
+    return process.env.SCREENSHOT_QUEUE_NAME || "screenshots";
+  },
 } as const;
 
 // ── Redis Key Prefixes ──────────────────────────────────────────

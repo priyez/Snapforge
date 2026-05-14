@@ -21,6 +21,7 @@ const envSchema = z.object({
   GITHUB_CLIENT_SECRET: z.string().optional(),
   DASHBOARD_URL: z.string().default("http://localhost:3300"),
   API_URL: z.string().default("http://localhost:3000"),
+  DIRECT_SCREENSHOT: z.coerce.boolean().default(false),
 });
 
 export type Env = z.infer<typeof envSchema>;

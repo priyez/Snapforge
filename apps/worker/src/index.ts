@@ -1,5 +1,6 @@
 import http from "node:http";
 import { loadWorkerEnv } from "./config/env.js";
+import { QUEUE_NAMES } from "@screenshot-api/shared";
 import { initBrowserPool, destroyBrowserPool, getPoolStats } from "./browser/pool.js";
 import { createProcessor } from "./processor.js";
 import { LocalStorageAdapter } from "./storage/local.js";
@@ -11,7 +12,12 @@ async function main() {
 
   // ── Tiny Health Check Server for Railway ────────────────────
   // This prevents Railway from killing the container due to "unresponsive port"
-  const port = Number(process.env.PORT || 3001);
+  // If PORT is 3000 (standard API port), we use 3001 locally to avoid collision.
+  let port = Number(process.env.WORKER_PORT || process.env.PORT || 3001);
+  if (port === 3000 && process.env.NODE_ENV !== "production") {
+    port = 3001;
+  }
+  
   const healthServer = http.createServer((req, res) => {
     if (req.url === "/health" || req.url === "/") {
       res.writeHead(200, { "Content-Type": "application/json" });
@@ -66,6 +72,7 @@ async function main() {
   │                                         │
   │   → Concurrency: ${String(env.WORKER_CONCURRENCY).padEnd(20)}│
   │   → Storage: ${env.STORAGE_PROVIDER.padEnd(25)}│
+  │   → Queue: ${QUEUE_NAMES.SCREENSHOT.padEnd(27)}│
   │   → Max pages/browser: ${String(env.MAX_BROWSER_PAGES).padEnd(14)}│
   │   → Timeout: ${String(env.SCREENSHOT_TIMEOUT).padEnd(24)}│
   │                                         │

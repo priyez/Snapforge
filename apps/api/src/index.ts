@@ -1,5 +1,6 @@
 import { loadEnv } from "./config/env.js";
 import { buildApp } from "./app.js";
+import { QUEUE_NAMES } from "@screenshot-api/shared";
 
 async function main() {
   const env = loadEnv();
@@ -15,6 +16,7 @@ async function main() {
   │   → http://localhost:${env.PORT}             │
   │   → Environment: ${env.NODE_ENV.padEnd(18)}│
   │   → Storage: ${env.STORAGE_PROVIDER.padEnd(23)}│
+  │   → Queue: ${QUEUE_NAMES.SCREENSHOT.padEnd(25)}│
   │                                         │
   └─────────────────────────────────────────┘
     `);

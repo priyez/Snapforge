@@ -16,6 +16,9 @@ import {
 import type { Env } from "../config/env.js";
 import { checkDailyQuota, incrementDailyQuota } from "../plugins/quota.js";
 import { prisma } from "@screenshot-api/db";
+import { takeDirectScreenshot } from "../lib/direct-screenshot.js";
+import { getStorageAdapter } from "../lib/storage.js";
+import { generateStorageKey } from "../../../worker/src/storage/interface.js";
 
 // ── Request Validation Schemas ──────────────────────────────────
 
@@ -59,6 +62,72 @@ const screenshotBodySchema = z.object({
   async: z.boolean().default(false),
   webhookUrl: z.string().url().optional(),
 });
+
+/**
+ * Helper to process a screenshot directly without a worker.
+ */
+async function processScreenshotDirectly(options: any, cacheKey: string, app: FastifyInstance) {
+  // Create job record in DB
+  const dbJob = await prisma.screenshotJob.create({
+    data: {
+      id: `direct_${cacheKey}_${Date.now()}`,
+      userId: options.userId || "anonymous",
+      url: options.url,
+      options: options as any,
+      status: "PROCESSING",
+    },
+  });
+
+  try {
+    // Take screenshot
+    const result = await takeDirectScreenshot(options);
+    
+    // Upload to storage
+    const storage = getStorageAdapter();
+    const storageKey = generateStorageKey(cacheKey, options.format);
+    const imageUrl = await storage.upload(storageKey, result.buffer, result.contentType);
+
+    const response: ScreenshotResponse = {
+      imageUrl,
+      format: options.format,
+      width: options.width,
+      height: options.height,
+      renderTimeMs: result.renderTimeMs,
+      cached: false,
+      expiresAt: new Date(Date.now() + LIMITS.CACHE_TTL * 1000).toISOString(),
+    };
+
+    // Update DB to COMPLETED
+    await prisma.screenshotJob.update({
+      where: { id: dbJob.id },
+      data: {
+        status: "COMPLETED",
+        imageUrl,
+        renderTimeMs: result.renderTimeMs,
+        completedAt: new Date(),
+      },
+    });
+
+    // Cache in Redis
+    await app.redis.setex(
+      `${REDIS_KEYS.CACHE_PREFIX}${cacheKey}`,
+      LIMITS.CACHE_TTL,
+      JSON.stringify(response)
+    );
+
+    return response;
+  } catch (err: any) {
+    // Update DB to FAILED
+    await prisma.screenshotJob.update({
+      where: { id: dbJob.id },
+      data: {
+        status: "FAILED",
+        errorMessage: err.message,
+      },
+    }).catch(() => {});
+    throw err;
+  }
+}
 
 // ── Route Registration ──────────────────────────────────────────
 
@@ -131,14 +200,18 @@ export async function registerScreenshotRoutes(app: FastifyInstance, env: Env) {
     if (cached) {
       const cachedResult = JSON.parse(cached) as ScreenshotResponse;
       // Increment quota for cached requests too
-      if (request.apiKey) {
-        await incrementDailyQuota(app, request.apiKey.userId);
+      const userId = request.apiKey?.userId || (request.user as any)?.sub || "anonymous";
+      if (userId !== "anonymous") {
+        await incrementDailyQuota(app, userId);
       }
       return reply.send({
         success: true,
         data: { ...cachedResult, cached: true },
       } satisfies ApiResponse<ScreenshotResponse>);
     }
+
+    // Generate User ID (API Key > Session > Anonymous)
+    const userId = request.apiKey?.userId || (request.user as any)?.sub || "anonymous";
 
     // Enqueue job
     const jobData: ScreenshotJobData = {
@@ -147,11 +220,27 @@ export async function registerScreenshotRoutes(app: FastifyInstance, env: Env) {
       darkMode: options.darkMode ?? DEFAULTS.DARK_MODE,
       blockAds: options.blockAds ?? DEFAULTS.BLOCK_ADS,
       cacheKey,
-      userId: request.apiKey?.userId,
+      userId,
     };
+
+    app.log.info({ userId, url: options.url }, "Processing screenshot request");
+
+    // Direct Mode (Bypass Worker)
+    if (env.DIRECT_SCREENSHOT) {
+      try {
+        const result = await processScreenshotDirectly(jobData, cacheKey, app);
+        if (userId !== "anonymous") await incrementDailyQuota(app, userId);
+        return reply.send({ success: true, data: result });
+      } catch (err: any) {
+        app.log.error({ err }, "Direct screenshot failed");
+        return reply.code(500).send({ success: false, error: { code: "INTERNAL_ERROR", message: err.message } });
+      }
+    }
 
     const job = await queue.add("screenshot", jobData, {
       jobId: cacheKey, // Deduplicate by cache key
+      removeOnComplete: true,
+      removeOnFail: true,
     });
 
     // Increment quota
@@ -167,12 +256,13 @@ export async function registerScreenshotRoutes(app: FastifyInstance, env: Env) {
         success: true,
         data: result as ScreenshotResponse,
       } satisfies ApiResponse<ScreenshotResponse>);
-    } catch (err) {
+    } catch (err: any) {
+      app.log.error({ err, jobId: job.id }, "Screenshot job waiting failed");
       return reply.code(504).send({
         success: false,
         error: {
           code: "TIMEOUT",
-          message: "Screenshot generation timed out. Try async mode with POST.",
+          message: `Screenshot generation failed: ${err.message}. Try async mode with POST.`,
         },
       } satisfies ApiResponse);
     }
@@ -225,8 +315,9 @@ export async function registerScreenshotRoutes(app: FastifyInstance, env: Env) {
     if (cached) {
       const cachedResult = JSON.parse(cached) as ScreenshotResponse;
       // Increment quota for cached requests too
-      if (request.apiKey) {
-        await incrementDailyQuota(app, request.apiKey.userId);
+      const userId = request.apiKey?.userId || (request.user as any)?.sub || "anonymous";
+      if (userId !== "anonymous") {
+        await incrementDailyQuota(app, userId);
       }
       return reply.send({
         success: true,
@@ -234,15 +325,34 @@ export async function registerScreenshotRoutes(app: FastifyInstance, env: Env) {
       } satisfies ApiResponse<ScreenshotResponse>);
     }
 
+    // Generate User ID (API Key > Session > Anonymous)
+    const userId = request.apiKey?.userId || (request.user as any)?.sub || "anonymous";
+
     // Enqueue job
     const jobData: ScreenshotJobData = {
       ...options,
       cacheKey,
-      userId: request.apiKey?.userId,
+      userId,
     };
 
+    app.log.info({ userId, url: options.url }, "Processing screenshot request (POST)");
+
+    // Direct Mode (Bypass Worker)
+    if (env.DIRECT_SCREENSHOT) {
+      try {
+        const result = await processScreenshotDirectly(jobData, cacheKey, app);
+        if (userId !== "anonymous") await incrementDailyQuota(app, userId);
+        return reply.send({ success: true, data: result });
+      } catch (err: any) {
+        app.log.error({ err }, "Direct screenshot failed");
+        return reply.code(500).send({ success: false, error: { code: "INTERNAL_ERROR", message: err.message } });
+      }
+    }
+
     const job = await queue.add("screenshot", jobData, {
-      jobId: cacheKey,
+      jobId: cacheKey, // Deduplicate by cache key
+      removeOnComplete: true,
+      removeOnFail: true,
     });
 
     // Increment quota
@@ -270,12 +380,13 @@ export async function registerScreenshotRoutes(app: FastifyInstance, env: Env) {
         success: true,
         data: result as ScreenshotResponse,
       } satisfies ApiResponse<ScreenshotResponse>);
-    } catch (err) {
+    } catch (err: any) {
+      app.log.error({ err, jobId: job.id }, "Screenshot job waiting failed");
       return reply.code(504).send({
         success: false,
         error: {
           code: "TIMEOUT",
-          message: "Screenshot generation timed out. Try async mode.",
+          message: `Screenshot generation failed: ${err.message}. Try async mode.`,
         },
       } satisfies ApiResponse);
     }

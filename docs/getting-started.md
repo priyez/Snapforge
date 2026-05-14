@@ -101,7 +101,13 @@ STORAGE_PATH=./screenshots
 # ── Worker ──
 WORKER_CONCURRENCY=3
 MAX_BROWSER_PAGES=50
-SCREENSHOT_TIMEOUT=30000
+SCREENSHOT_TIMEOUT=90000
+
+# ── Local Development (Optional) ──
+# Bypasses the queue and worker, takes screenshots directly in the API process
+DIRECT_SCREENSHOT=true
+# Unique queue name to avoid "job stealing" if using the same remote Redis
+SCREENSHOT_QUEUE_NAME=local-dev-queue
 ```
 
 ### Environment Variables Reference
@@ -116,7 +122,9 @@ SCREENSHOT_TIMEOUT=30000
 | `STORAGE_PATH`        | No       | `./screenshots` | Local storage directory                       |
 | `WORKER_CONCURRENCY`  | No       | `3`           | Number of concurrent browser instances          |
 | `MAX_BROWSER_PAGES`   | No       | `50`          | Max pages per browser                           |
-| `SCREENSHOT_TIMEOUT`  | No       | `30000`       | Screenshot timeout in milliseconds              |
+| `SCREENSHOT_TIMEOUT`  | No       | `90000`       | Screenshot timeout in milliseconds              |
+| `DIRECT_SCREENSHOT`  | No       | `false`       | Bypass worker/queue for local testing           |
+| `SCREENSHOT_QUEUE_NAME` | No    | `screenshots` | Custom queue name to isolate environments       |
 | `R2_ENDPOINT`         | If R2    | —             | Cloudflare R2 endpoint URL                      |
 | `R2_ACCESS_KEY_ID`    | If R2    | —             | R2 access key                                   |
 | `R2_SECRET_ACCESS_KEY` | If R2   | —             | R2 secret key                                   |
@@ -194,6 +202,18 @@ pnpm --filter @screenshot-api/worker dev
 # Dashboard only
 pnpm --filter frontend dev
 ```
+
+### Direct Mode (Recommended for Local Dev)
+
+If you are fighting with Redis connection issues or "job stealing" from production workers, enable **Direct Mode** in your `.env`:
+
+```env
+DIRECT_SCREENSHOT=true
+```
+
+In this mode, the API will launch its own one-off Puppeteer instance to take the screenshot immediately. No Worker process or Redis queue is required. 
+
+> **Note:** Direct Mode is for development only. Production should always use the Worker/Queue architecture for scalability and stability.
 
 ---
 

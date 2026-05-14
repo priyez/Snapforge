@@ -62,6 +62,20 @@ Client ◀── API Server ◀── QueueEvents ◀─────────
 6. Worker uploads to storage (local disk or R2) and returns the result
 7. API returns the screenshot URL to the client
 
+### Direct Mode (Development Bypass)
+
+```
+Client ──▶ API Server (Puppeteer) ──▶ Storage
+```
+
+For rapid local development, the platform supports **Direct Mode** via `DIRECT_SCREENSHOT=true`. In this mode:
+1. The API server skips enqueuing a BullMQ job.
+2. It launches its own one-off Puppeteer instance immediately.
+3. It captures the screenshot and uploads it to storage directly.
+4. It records the job in the database and returns the result.
+
+This removes the dependency on a running Worker process and Redis queue during initial UI/logic development.
+
 ### Asynchronous Screenshot
 
 ```
