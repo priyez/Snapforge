@@ -15,7 +15,7 @@
   "devDependencies": {
     "@screenshot-api/tsconfig": "workspace:*",
     "@types/node": "^25.6.2",
-    "axios": "^1.16.0",
+    "axios": "^1.18.0",
     "puppeteer": "^24.0.0",
     "turbo": "^2.5.0",
     "typescript": "^5.7.0"
