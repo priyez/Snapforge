@@ -14,7 +14,7 @@
     "@screenshot-api/db": "workspace:*",
     "@screenshot-api/queue": "workspace:*",
     "@screenshot-api/shared": "workspace:*",
-    "axios": "^1.16.0",
+    "axios": "^1.18.0",
     "bullmq": "^5.30.0",
     "generic-pool": "^3.9.0",
     "ioredis": "^5.4.0",
